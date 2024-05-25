@@ -15,7 +15,7 @@ class WeatherViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private var cancellables = Set<AnyCancellable>()
-    private let apiKey = "b2a4f55ba70967fdfde180047574d37f" //  API key from OpenWeather
+    private let apiKey = "b2a4f55ba70967fdfde180047574d37f"
     private let baseURL = "https://api.openweathermap.org/data/2.5/"
 
     func fetchWeather(for city: String) {
@@ -44,8 +44,28 @@ class WeatherViewModel: ObservableObject {
                 }
             }, receiveValue: { weather, forecast in
                 self.currentWeather = weather
-                self.forecast = Array(forecast.list.prefix(3))
+                self.forecast = self.filterNextThreeDays(from: forecast.list)
             })
             .store(in: &cancellables)
+    }
+
+    private func filterNextThreeDays(from forecast: [Weather]) -> [Weather] {
+        var filteredForecast: [Weather] = []
+        var lastAddedDay: String?
+
+        let calendar = Calendar.current
+        for weather in forecast {
+            let date = Date(timeIntervalSince1970: weather.dt)
+            let day = calendar.component(.day, from: date)
+            let dayString = String(day)
+            if lastAddedDay == nil || lastAddedDay != dayString {
+                filteredForecast.append(weather)
+                lastAddedDay = dayString
+            }
+            if filteredForecast.count == 3 {
+                break
+            }
+        }
+        return filteredForecast
     }
 }
